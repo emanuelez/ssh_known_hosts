@@ -28,19 +28,24 @@ if Chef::Config[:solo]
   # On Chef Solo, we still want the current node to be in the ssh_known_hosts
   hosts = [node]
 else
-  hosts = partial_search(:node, "keys_ssh:* NOT name:#{node.name}",
-                         :keys => {
-                           'hostname' => [ 'hostname' ],
-                           'fqdn'     => [ 'fqdn' ],
-                           'ipaddress' => [ 'ipaddress' ],
-                           'host_rsa_public' => [ 'keys', 'ssh', 'host_rsa_public' ],
-                           'host_dsa_public' => [ 'keys', 'ssh', 'host_dsa_public' ]
-                         }
-                        ).collect do |host|
-                          {
-                            'fqdn' => host['fqdn'] || host['ipaddress'] || host['hostname'],
-                            'key' => host['host_rsa_public'] || host['host_dsa_public']
-                          }
+  begin
+    hosts = partial_search(:node, "keys_ssh:* NOT name:#{node.name}",
+                           :keys => {
+                             'hostname' => [ 'hostname' ],
+                             'fqdn'     => [ 'fqdn' ],
+                             'ipaddress' => [ 'ipaddress' ],
+                             'host_rsa_public' => [ 'keys', 'ssh', 'host_rsa_public' ],
+                             'host_dsa_public' => [ 'keys', 'ssh', 'host_dsa_public' ]
+                           }
+                          ).collect do |host|
+                            {
+                              'fqdn' => host['fqdn'] || host['ipaddress'] || host['hostname'],
+                              'key' => host['host_rsa_public'] || host['host_dsa_public']
+                            }
+    end
+  rescue
+    Chef::Log.info "Could not perform the partial search"
+    hosts = [node]
   end
 end
 
